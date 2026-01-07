@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像仕様＆視認性チェッカー (Neon Theme)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* --- CSSフィルタ定義 --- */
+        .blur-mode { filter: blur(3px); }
+        .filter-protanopia { filter: url(#protanopia-filter); }
+        .filter-deuteranopia { filter: url(#deuteranopia-filter); }
+
+        /* 判定ラベル用カラー定義 (ロジック用は変更なし) */
+        .status-blue { background-color: #dbeafe; color: #1e40af; border-left: 5px solid #2563eb; }
+        .status-yellow { background-color: #fef9c3; color: #854d0e; border-left: 5px solid #ca8a04; }
+        .status-red { background-color: #fee2e2; color: #991b1b; border-left: 5px solid #dc2626; }
+
+        /* プライマリーカラー適用クラス */
+        .bg-primary { background-color: #CBFF1C; }
+        .text-primary { color: #CBFF1C; }
+        .border-primary { border-color: #CBFF1C; }
+        
+        /* ホバー時の挙動（少し暗くする） */
+        .hover-primary:hover { background-color: #b3e600; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 p-6 min-h-screen">
+
+    <svg style="display: none;">
+        <defs>
+            <filter id="protanopia-filter">
+                <feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0" />
+            </filter>
+            <filter id="deuteranopia-filter">
+                <feColorMatrix type="matrix" values="0.625, 0.375, 0, 0, 0  0.7, 0.3, 0, 0, 0  0, 0.3, 0.7, 0, 0  0, 0, 0, 1, 0" />
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg border-t-8 border-[#CBFF1C]">
+        <h1 class="text-3xl font-extrabold mb-2 text-gray-900 tracking-tight">
+            Misskey.io<br>申請カスタム絵文字用<br>画像仕様＆視認性チェッカー
+        </h1>
+        <p class="text-sm text-gray-500 mb-6">サーバー送信なし / ローカル完結型ツール<br>あくまで基準としてお使いください。<br>このチェッカーでOKが出ても確実に申請ができるとは限りません。</p>
+        
+        <div id="dropZone" class="group border-4 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-[#CBFF1C] hover:bg-[#CBFF1C]/10 transition-all cursor-pointer duration-300">
+            <div class="pointer-events-none">
+                <p class="text-gray-400 font-bold text-xl group-hover:text-gray-600 transition-colors">ここに画像をドロップ</p>
+                <p class="text-sm text-gray-400 mt-2">対応形式: WebP, PNG, GIF</p>
+            </div>
+            <input type="file" id="fileInput" class="hidden" accept="image/png, image/gif, image/webp">
+        </div>
+
+        <div id="resultArea" class="hidden mt-10 animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div>
+                    <h2 class="text-xl font-bold mb-4 border-b-2 border-gray-100 pb-2 flex items-center gap-3">
+                        ① 仕様チェック
+                        <span id="fileTypeLabel" class="text-xs font-bold px-2 py-1 bg-gray-800 text-[#CBFF1C] rounded uppercase tracking-wider"></span>
+                    </h2>
+                    <ul id="specList" class="space-y-3 text-sm"></ul>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold mb-4 border-b-2 border-gray-100 pb-2">② 視認性シミュレーション</h2>
+                    
+                    <div class="mb-6 space-y-5 bg-gray-50 p-4 rounded-lg">
+                        
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">背景色 (透過チェック)</p>
+                            <div class="flex gap-2">
+                                <button onclick="setBgMode('light')" class="flex-1 py-1.5 border rounded shadow-sm bg-white text-gray-800 hover:bg-gray-100 text-xs font-bold transition">☀ ライト</button>
+                                <button onclick="setBgMode('dark')" class="flex-1 py-1.5 border rounded shadow-sm bg-gray-900 text-white hover:bg-black text-xs font-bold transition">🌙 ダーク</button>
+                                <button onclick="setBgMode('check')" class="flex-1 py-1.5 border rounded shadow-sm bg-gray-200 text-gray-600 text-xs transition">🏁 透明</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">見え方・コントラスト</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="setMode('normal')" class="filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition" data-mode="normal">通常</button>
+                                <button onclick="setMode('protanopia')" class="filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition" data-mode="protanopia">P型 (赤NG)</button>
+                                <button onclick="setMode('deuteranopia')" class="filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition" data-mode="deuteranopia">D型 (緑NG)</button>
+                                <button onclick="setMode('blur')" class="filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition" data-mode="blur">ぼかし</button>
+                                <button onclick="setMode('edge')" class="filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition border-2 border-gray-800" data-mode="edge">境界線抽出</button>
+                            </div>
+                            <p class="text-xs text-red-500 mt-2 hidden font-bold bg-red-50 p-2 rounded" id="edgeNote">⚠️ 真っ黒で文字が読めない場合、コントラストが不足しています。</p>
+                        </div>
+                    </div>
+
+                    <div id="previewContainer" class="border-2 border-gray-200 p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-100 flex justify-center items-center min-h-[250px] rounded-lg relative overflow-hidden transition-colors duration-300">
+                        <img id="previewImage" class="max-w-full h-auto max-h-64 object-contain transition duration-300 absolute" style="display: block;">
+                        <canvas id="edgeCanvas" class="max-w-full h-auto max-h-64 object-contain absolute" style="display: none;"></canvas>
+                    </div>
+
+                    <div class="mt-6">
+                        <a href="https://misskey-hub.net/ja/tools/custom-emoji-preview/" target="_blank" rel="noopener noreferrer" 
+                           class="group flex items-center justify-center w-full bg-[#CBFF1C] hover:bg-[#b3e600] text-black font-bold py-3 px-4 rounded-lg transition-all shadow-md transform hover:translate-y-[-1px]">
+                            <span class="mr-2 text-lg group-hover:scale-110 transition-transform">🚀</span> Misskey カスタム絵文字プレビューへ
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const resultArea = document.getElementById('resultArea');
+        const previewImage = document.getElementById('previewImage');
+        const previewContainer = document.getElementById('previewContainer');
+        const edgeCanvas = document.getElementById('edgeCanvas');
+        const specList = document.getElementById('specList');
+        const fileTypeLabel = document.getElementById('fileTypeLabel');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const edgeNote = document.getElementById('edgeNote');
+
+        let currentSourceImage = null;
+
+        // --- イベント設定 ---
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-[#CBFF1C]', 'bg-[#CBFF1C]/10'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-[#CBFF1C]', 'bg-[#CBFF1C]/10'); });
+        dropZone.addEventListener('drop', (e) => { 
+            e.preventDefault(); 
+            dropZone.classList.remove('border-[#CBFF1C]', 'bg-[#CBFF1C]/10'); 
+            handleFiles(e.dataTransfer.files); 
+        });
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        async function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const isAnim = isAnimated(file, arrayBuffer);
+            const blob = new Blob([arrayBuffer], { type: file.type });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                currentSourceImage = img;
+                runCheck(file, img, isAnim);
+                setMode('normal');
+                setBgMode('light'); 
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+            previewImage.src = url;
+        }
+
+        // --- アニメーション判定 ---
+        function isAnimated(file, buffer) {
+            const uint8 = new Uint8Array(buffer);
+            if (file.type === 'image/gif') return true;
+            if (file.type === 'image/png') {
+                const hex = [...uint8.slice(0, 1000)].map(b => b.toString(16).padStart(2, '0')).join('');
+                return hex.includes('6163544c');
+            }
+            if (file.type === 'image/webp') {
+                const text = new TextDecoder().decode(uint8.slice(0, 100));
+                return text.includes('ANIM');
+            }
+            return false;
+        }
+
+        // --- 仕様判定 ---
+        function runCheck(file, img, isAnim) {
+            resultArea.classList.remove('hidden');
+            specList.innerHTML = '';
+            fileTypeLabel.innerText = isAnim ? 'ANIMATION' : 'STATIC';
+            
+            // 形式
+            const validFormats = ['image/png', 'image/gif', 'image/webp'];
+            let formatStatus = validFormats.includes(file.type) ? 'blue' : 'red';
+            let msg = file.type.split('/')[1].toUpperCase();
+            if(formatStatus === 'red') msg += ' (未対応)';
+            else if(file.type !== 'image/webp') msg += ' (WebP推奨)';
+            else msg += ' (推奨)';
+            addResultItem('ファイル形式', msg, formatStatus);
+
+            // 解像度
+            addResultItem('幅 (1500px以下)', `${img.width} px`, img.width <= 1500 ? 'blue' : 'red');
+            addResultItem('高さ (256px以下)', `${img.height} px`, img.height <= 256 ? 'blue' : 'red');
+
+            // 容量
+            const kb = file.size / 1024;
+            const base = isAnim ? 64 : 10;
+            const max = isAnim ? 84 : 30;
+            let sizeStatus = kb > max ? 'red' : (kb > base ? 'yellow' : 'blue');
+            addResultItem(`容量 (${base}KB目安)`, `${kb.toFixed(1)} KB`, sizeStatus);
+        }
+
+        function addResultItem(label, value, statusColor) {
+            const li = document.createElement('li');
+            li.className = `flex justify-between items-center p-3 rounded shadow-sm status-${statusColor}`;
+            let icon = statusColor === 'blue' ? '🔵 OK' : (statusColor === 'yellow' ? '🟡 注意' : '🔴 警告');
+            li.innerHTML = `<span class="font-bold">${label}</span> <div class="text-right"><div>${value}</div><div class="text-xs opacity-75">${icon}</div></div>`;
+            specList.appendChild(li);
+        }
+
+        // --- 背景色切り替え ---
+        function setBgMode(mode) {
+            if (mode === 'check') {
+                previewContainer.style.backgroundImage = "url('https://www.transparenttextures.com/patterns/cubes.png')";
+                previewContainer.style.backgroundColor = '#f3f4f6';
+            } else {
+                previewContainer.style.backgroundImage = 'none';
+                if (mode === 'light') previewContainer.style.backgroundColor = '#FFFFFF';
+                if (mode === 'dark') previewContainer.style.backgroundColor = '#0A0A0A';
+            }
+        }
+
+        // --- フィルタ切り替え ---
+        function setMode(mode) {
+            // 全ボタンリセット
+            filterBtns.forEach(btn => {
+                btn.className = 'filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition bg-white text-gray-700 border border-gray-300 hover:bg-gray-50';
+                if(btn.dataset.mode === 'edge') btn.classList.add('bg-gray-800', 'text-white', 'border-gray-800', 'hover:bg-gray-900');
+            });
+
+            // アクティブボタン設定 (プライマリーカラー適用)
+            const activeBtn = document.querySelector(`button[data-mode="${mode}"]`);
+            if(activeBtn) {
+                if(mode === 'edge') {
+                    // エッジモードは特別扱い（黒背景のまま強調）
+                    activeBtn.className = 'filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition bg-black text-[#CBFF1C] border-black ring-2 ring-[#CBFF1C] ring-offset-1';
+                } else {
+                    // 通常フィルタはプライマリーカラー背景 + 黒文字
+                    activeBtn.className = 'filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition bg-[#CBFF1C] text-black border-[#CBFF1C] hover:bg-[#b3e600]';
+                }
+            }
+
+            // 画面処理
+            if (mode === 'edge') {
+                previewImage.style.display = 'none';
+                edgeCanvas.style.display = 'block';
+                edgeNote.classList.remove('hidden');
+                applyEdgeDetection(currentSourceImage);
+            } else {
+                previewImage.style.display = 'block';
+                edgeCanvas.style.display = 'none';
+                edgeNote.classList.add('hidden');
+                previewImage.className = 'max-w-full h-auto max-h-64 object-contain transition duration-300 absolute';
+                if (mode === 'blur') previewImage.classList.add('blur-mode');
+                if (mode === 'protanopia') previewImage.classList.add('filter-protanopia');
+                if (mode === 'deuteranopia') previewImage.classList.add('filter-deuteranopia');
+            }
+        }
+
+        // --- 境界線抽出 (Canvas) ---
+        function applyEdgeDetection(img) {
+            if (!img) return;
+            const ctx = edgeCanvas.getContext('2d');
+            edgeCanvas.width = img.width;
+            edgeCanvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, edgeCanvas.width, edgeCanvas.height);
+            const data = imageData.data;
+            const width = edgeCanvas.width;
+            const height = edgeCanvas.height;
+            const outputData = ctx.createImageData(width, height);
+            const output = outputData.data;
+            const getGray = (i) => 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const i = (y * width + x) * 4;
+                    const gx = Math.abs(getGray(i+4) - getGray(i-4));
+                    const gy = Math.abs(getGray(i + width*4) - getGray(i - width*4));
+                    let val = (gx + gy) > 100 ? 255 : 0;
+                    output[i] = val; output[i + 1] = val; output[i + 2] = val; output[i + 3] = 255;
+                }
+            }
+            ctx.putImageData(outputData, 0, 0);
+        }
+    </script>
+</body>
+</html>
