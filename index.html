@@ -1,18 +1,33 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-7FKGWR8L3Z"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+        <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7FKGWR8L3Z"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
-  gtag('config', 'G-7FKGWR8L3Z');
-</script>
+    gtag('config', 'G-7FKGWR8L3Z');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像仕様＆視認性チェッカー (Neon Theme)</title>
+    
+    <meta name="description" content="ブラウザだけで画像(PNG/GIF/WebP)の仕様と視認性を即座に判定。サーバー送信なしで安全。Misskeyカスタム絵文字やバナー制作のチェックに最適です。">
+    <meta name="theme-color" content="#CBFF1C">
+    <meta property="og:title" content="画像仕様＆視認性チェッカー | kurokuro-tools">
+    <meta property="og:description" content="ドラッグ＆ドロップで一発判定。色覚シミュレーション＆コントラスト確認機能付き。サーバー送信なしで安全に使えます。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://kurokuro-tools.github.io/image-spec-checker/">
+    <meta property="og:site_name" content="kurokuro-tools">
+    <meta property="og:locale" content="ja_JP">
+    <meta property="og:image" content="https://kurokuro-tools.github.io/image-spec-checker/ogp.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="画像仕様＆視認性チェッカー">
+    <meta name="twitter:description" content="ドラッグ＆ドロップで一発判定。サーバー送信なしで安全。">
+    <meta name="twitter:image" content="https://kurokuro-tools.github.io/image-spec-checker/ogp.png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* --- CSSフィルタ定義 --- */
@@ -20,7 +35,7 @@
         .filter-protanopia { filter: url(#protanopia-filter); }
         .filter-deuteranopia { filter: url(#deuteranopia-filter); }
 
-        /* 判定ラベル用カラー定義 (ロジック用は変更なし) */
+        /* 判定ラベル用カラー定義 */
         .status-blue { background-color: #dbeafe; color: #1e40af; border-left: 5px solid #2563eb; }
         .status-yellow { background-color: #fef9c3; color: #854d0e; border-left: 5px solid #ca8a04; }
         .status-red { background-color: #fee2e2; color: #991b1b; border-left: 5px solid #dc2626; }
@@ -29,8 +44,6 @@
         .bg-primary { background-color: #CBFF1C; }
         .text-primary { color: #CBFF1C; }
         .border-primary { border-color: #CBFF1C; }
-        
-        /* ホバー時の挙動（少し暗くする） */
         .hover-primary:hover { background-color: #b3e600; }
     </style>
 </head>
@@ -48,10 +61,17 @@
     </svg>
 
     <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg border-t-8 border-[#CBFF1C]">
-        <h1 class="text-3xl font-extrabold mb-2 text-gray-900 tracking-tight">
-            Misskey.io<br>申請カスタム絵文字用<br>画像仕様＆視認性チェッカー
-        </h1>
-        <p class="text-sm text-gray-500 mb-6">サーバー送信なし / ローカル完結型ツール<br>あくまで基準としてお使いください。<br>このチェッカーでOKが出ても確実に申請ができるとは限りません。</p>
+        
+        <div class="flex flex-col md:flex-row md:items-end gap-2 md:gap-4 mb-2">
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
+                画像仕様＆視認性チェッカー
+            </h1>
+            <a href="https://misskey.io/@kuro_kuro_kuroi" target="_blank" rel="noopener noreferrer" 
+               class="text-xs font-bold text-gray-400 hover:text-black hover:bg-[#CBFF1C] px-2 py-1 rounded transition-colors mb-1.5 flex items-center">
+               🔧 不具合報告はこちら
+            </a>
+        </div>
+        <p class="text-sm text-gray-500 mb-6">サーバー送信なし / ローカル完結型ツール</p>
         
         <div id="dropZone" class="group border-4 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-[#CBFF1C] hover:bg-[#CBFF1C]/10 transition-all cursor-pointer duration-300">
             <div class="pointer-events-none">
@@ -223,25 +243,20 @@
 
         // --- フィルタ切り替え ---
         function setMode(mode) {
-            // 全ボタンリセット
             filterBtns.forEach(btn => {
                 btn.className = 'filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition bg-white text-gray-700 border border-gray-300 hover:bg-gray-50';
                 if(btn.dataset.mode === 'edge') btn.classList.add('bg-gray-800', 'text-white', 'border-gray-800', 'hover:bg-gray-900');
             });
 
-            // アクティブボタン設定 (プライマリーカラー適用)
             const activeBtn = document.querySelector(`button[data-mode="${mode}"]`);
             if(activeBtn) {
                 if(mode === 'edge') {
-                    // エッジモードは特別扱い（黒背景のまま強調）
                     activeBtn.className = 'filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition bg-black text-[#CBFF1C] border-black ring-2 ring-[#CBFF1C] ring-offset-1';
                 } else {
-                    // 通常フィルタはプライマリーカラー背景 + 黒文字
                     activeBtn.className = 'filter-btn px-3 py-1.5 rounded text-xs font-bold shadow-sm transition bg-[#CBFF1C] text-black border-[#CBFF1C] hover:bg-[#b3e600]';
                 }
             }
 
-            // 画面処理
             if (mode === 'edge') {
                 previewImage.style.display = 'none';
                 edgeCanvas.style.display = 'block';
